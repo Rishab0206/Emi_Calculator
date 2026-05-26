@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 # Page configuration
 st.set_page_config(page_title="Loan EMI Calculator", page_icon="💰", layout="centered")
@@ -47,3 +48,42 @@ if principal > 0 and annual_rate > 0 and months > 0:
     st.markdown(f"**Principal Amount:** ₹{principal:,.2f}  \n"
                 f"**Total Interest Payable:** ₹{total_interest:,.2f}  \n"
                 f"**Monthly Installment (EMI):** **₹{emi:,.2f}**")
+
+    # Amortization Table Logic
+    st.markdown("---")
+    st.subheader("📅 Monthly Amortization Schedule")
+    st.write("Track how your balance reduces with each monthly payment:")
+
+    remaining_balance = principal
+    schedule_data = []
+
+    for month in range(1, months + 1):
+        interest_payment = remaining_balance * monthly_rate
+        principal_payment = emi - interest_payment
+        remaining_balance -= principal_payment
+        
+        # Negative balance check for last month precision
+        if remaining_balance < 0:
+            remaining_balance = 0
+            
+        schedule_data.append({
+            "Month": month,
+            "EMI (Payment)": round(emi, 2),
+            "Principal Paid": round(principal_payment, 2),
+            "Interest Paid": round(interest_payment, 2),
+            "Remaining Balance": round(remaining_balance, 2)
+        })
+
+    # Convert to Dataframe and format currency display
+    df = pd.DataFrame(schedule_data)
+    
+    # Custom formatting for a cleaner bank-like look
+    formatted_df = df.style.format({
+        "EMI (Payment)": "₹{:,.2f}",
+        "Principal Paid": "₹{:,.2f}",
+        "Interest Paid": "₹{:,.2f}",
+        "Remaining Balance": "₹{:,.2f}"
+    })
+
+    # Display Table in Streamlit
+    st.dataframe(formatted_df, use_container_width=True, hide_index=True)
