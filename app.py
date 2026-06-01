@@ -17,11 +17,11 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-    principal = st.number_input("Loan Amount (Rs.)", min_value=1000, value=500000, step=10000)
+    principal = st.number_input("Loan Amount (Rs.)", min_value=1000, value=10000000, step=10000)
     annual_rate = st.number_input("Annual Interest Rate (%)", min_value=1.0, max_value=50.0, value=10.5, step=0.1)
 
 with col2:
-    months = st.number_input("Tenure (Months)", min_value=1, max_value=360, value=60, step=1)
+    months = st.number_input("Tenure (Months)", min_value=1, max_value=360, value=84, step=1)
     years_display = months / 12
     st.info(f"Total Tenure: **{years_display:.1f} Years ({months} Months)**")
 
