@@ -104,7 +104,7 @@ def currency_style(df: pd.DataFrame):
     return df.style.format({col: "₹{:,.2f}" for col in existing_columns})
 
 def calculator_inputs(title: str, key_prefix: str, default_rate: float) -> dict:
-    """Show inputs for one loan option including part payment toggle."""
+    """Show inputs for one loan option including inline part payment impact."""
     st.markdown(f"### {title}")
 
     principal = st.number_input(
@@ -124,8 +124,10 @@ def calculator_inputs(title: str, key_prefix: str, default_rate: float) -> dict:
 
     st.info(f"Tenure: **{months / 12:.1f} Years ({months} Months)**")
 
-    # ---- Part Payment Section ----
+    result = calculate_emi(principal, annual_rate, int(months))
     part_payments = {}
+
+    # ---- Part Payment Section with Inline Calculation ----
     enable_pp = st.toggle("Enable Part Payment", key=f"{key_prefix}_pp_toggle")
     if enable_pp:
         c1, c2 = st.columns(2)
@@ -136,10 +138,26 @@ def calculator_inputs(title: str, key_prefix: str, default_rate: float) -> dict:
         
         if pp_amt > 0:
             part_payments[int(pp_month)] = pp_amt
-            st.success(f"₹{pp_amt:,.2f} will be paid extra at month {int(pp_month)}.")
-    # ------------------------------
+            
+            # Quick background calculation just to show impact inline
+            temp_schedule = build_repayment_schedule(
+                principal, annual_rate, int(months), result["emi"], date.today(), part_payments
+            )
+            
+            if not temp_schedule.empty:
+                actual_months = int(temp_schedule["Month No."].max())
+                actual_interest = temp_schedule["Interest Paid"].sum()
+                
+                interest_saved = result["standard_total_interest"] - actual_interest
+                tenure_reduced = int(months) - actual_months
 
-    result = calculate_emi(principal, annual_rate, int(months))
+                st.success(
+                    f"✅ **{format_inr(pp_amt)}** will be deducted at month **{int(pp_month)}**.\n\n"
+                    f"🎉 **Interest Saved:** {format_inr(interest_saved)}\n\n"
+                    f"⏳ **Tenure Reduced:** {tenure_reduced} Months"
+                )
+    # ----------------------------------------------------
+
     result.update({
         "principal": principal,
         "annual_rate": annual_rate,
@@ -215,27 +233,6 @@ schedule_2 = build_repayment_schedule(
 
 act_1 = get_actual_metrics(schedule_1, option_1)
 act_2 = get_actual_metrics(schedule_2, option_2)
-
-
-# -----------------------------
-# Part Payment Impact Section
-# -----------------------------
-st.markdown("---")
-st.subheader("🚀 Part Payment Impact")
-
-pp_col1, pp_col2 = st.columns(2)
-
-with pp_col1:
-    if act_1["interest_saved"] > 0:
-        st.success(f"**Calculator 1:** Due to part payment, you save **{format_inr(act_1['interest_saved'])}** in Interest and your tenure is reduced by **{act_1['tenure_reduced']} Months**.")
-    else:
-        st.info("**Calculator 1:** No part payment impact.")
-
-with pp_col2:
-    if act_2["interest_saved"] > 0:
-        st.success(f"**Calculator 2:** Due to part payment, you save **{format_inr(act_2['interest_saved'])}** in Interest and your tenure is reduced by **{act_2['tenure_reduced']} Months**.")
-    else:
-        st.info("**Calculator 2:** No part payment impact.")
 
 
 # -----------------------------
