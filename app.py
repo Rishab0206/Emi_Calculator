@@ -19,14 +19,22 @@ def format_inr(amount: float) -> str:
     return f"₹{amount:,.2f}"
 
 def calculate_emi(principal: float, annual_rate: float, months: int) -> dict:
-    """Calculate basic standard EMI."""
+    """Calculate basic standard EMI and standard totals without part payment."""
     if principal <= 0 or annual_rate <= 0 or months <= 0:
-        return {"emi": 0.0, "monthly_rate": 0.0}
+        return {"emi": 0.0, "monthly_rate": 0.0, "standard_total_interest": 0.0, "standard_total_payment": 0.0}
 
     monthly_rate = (annual_rate / 12) / 100
     emi = principal * monthly_rate * ((1 + monthly_rate) ** months) / (((1 + monthly_rate) ** months) - 1)
+    
+    standard_total_payment = emi * months
+    standard_total_interest = standard_total_payment - principal
 
-    return {"emi": emi, "monthly_rate": monthly_rate}
+    return {
+        "emi": emi, 
+        "monthly_rate": monthly_rate,
+        "standard_total_interest": standard_total_interest,
+        "standard_total_payment": standard_total_payment
+    }
 
 def build_repayment_schedule(
     principal: float,
@@ -128,7 +136,7 @@ def calculator_inputs(title: str, key_prefix: str, default_rate: float) -> dict:
         
         if pp_amt > 0:
             part_payments[int(pp_month)] = pp_amt
-            st.success(f"₹{pp_amt:,.2f} will be deducted from principal at month {int(pp_month)}.")
+            st.success(f"₹{pp_amt:,.2f} will be paid extra at month {int(pp_month)}.")
     # ------------------------------
 
     result = calculate_emi(principal, annual_rate, int(months))
@@ -141,7 +149,7 @@ def calculator_inputs(title: str, key_prefix: str, default_rate: float) -> dict:
     return result
 
 def get_actual_metrics(schedule_df, option_dict):
-    """Calculate actual totals from the schedule DataFrame."""
+    """Calculate actual totals and savings from the schedule DataFrame."""
     if schedule_df.empty:
         return option_dict
         
@@ -149,13 +157,18 @@ def get_actual_metrics(schedule_df, option_dict):
     actual_interest = schedule_df["Interest Paid"].sum()
     actual_payment = schedule_df["EMI"].sum() + schedule_df["Part Payment"].sum()
 
+    interest_saved = option_dict["standard_total_interest"] - actual_interest
+    tenure_reduced = option_dict["months"] - actual_months
+
     return {
         "principal": option_dict["principal"],
         "annual_rate": option_dict["annual_rate"],
         "original_months": option_dict["months"],
         "actual_months": actual_months,
+        "tenure_reduced": tenure_reduced,
         "emi": option_dict["emi"],
         "total_interest": actual_interest,
+        "interest_saved": interest_saved,
         "total_payment": actual_payment
     }
 
@@ -203,6 +216,28 @@ schedule_2 = build_repayment_schedule(
 act_1 = get_actual_metrics(schedule_1, option_1)
 act_2 = get_actual_metrics(schedule_2, option_2)
 
+
+# -----------------------------
+# Part Payment Impact Section
+# -----------------------------
+st.markdown("---")
+st.subheader("🚀 Part Payment Impact")
+
+pp_col1, pp_col2 = st.columns(2)
+
+with pp_col1:
+    if act_1["interest_saved"] > 0:
+        st.success(f"**Calculator 1:** Due to part payment, you save **{format_inr(act_1['interest_saved'])}** in Interest and your tenure is reduced by **{act_1['tenure_reduced']} Months**.")
+    else:
+        st.info("**Calculator 1:** No part payment impact.")
+
+with pp_col2:
+    if act_2["interest_saved"] > 0:
+        st.success(f"**Calculator 2:** Due to part payment, you save **{format_inr(act_2['interest_saved'])}** in Interest and your tenure is reduced by **{act_2['tenure_reduced']} Months**.")
+    else:
+        st.info("**Calculator 2:** No part payment impact.")
+
+
 # -----------------------------
 # Breakdown metrics
 # -----------------------------
@@ -221,9 +256,9 @@ comparison_data = pd.DataFrame([
         "Calculator 2": f'{act_2["annual_rate"]:.2f}%',
     },
     {
-        "Particulars": "Actual Tenure",
-        "Calculator 1": f'{act_1["actual_months"]} Months (Originally {act_1["original_months"]})',
-        "Calculator 2": f'{act_2["actual_months"]} Months (Originally {act_2["original_months"]})',
+        "Particulars": "Actual Tenure (Months)",
+        "Calculator 1": f'{act_1["actual_months"]} (Originally {act_1["original_months"]})',
+        "Calculator 2": f'{act_2["actual_months"]} (Originally {act_2["original_months"]})',
     },
     {
         "Particulars": "Monthly EMI",
@@ -231,12 +266,12 @@ comparison_data = pd.DataFrame([
         "Calculator 2": format_inr(act_2["emi"]),
     },
     {
-        "Particulars": "Total Interest",
+        "Particulars": "Total Interest (Actual)",
         "Calculator 1": format_inr(act_1["total_interest"]),
         "Calculator 2": format_inr(act_2["total_interest"]),
     },
     {
-        "Particulars": "Total Payment",
+        "Particulars": "Total Payment (Actual)",
         "Calculator 1": format_inr(act_1["total_payment"]),
         "Calculator 2": format_inr(act_2["total_payment"]),
     },
@@ -248,7 +283,7 @@ st.dataframe(comparison_data, use_container_width=True, hide_index=True)
 # Savings / difference section
 # -----------------------------
 st.markdown("---")
-st.subheader("💡 Difference / Savings Details")
+st.subheader("💡 Difference / Savings Details (Calculator 1 vs 2)")
 
 emi_difference = act_1["emi"] - act_2["emi"]
 interest_difference = act_1["total_interest"] - act_2["total_interest"]
@@ -263,7 +298,7 @@ with m1:
     )
 with m2:
     st.metric(
-        "Interest Difference",
+        "Actual Interest Difference",
         format_inr(abs(interest_difference)),
         delta="Calculator 2 saves interest" if interest_difference > 0 else "Calculator 1 saves interest",
     )
@@ -275,11 +310,11 @@ with m3:
     )
 
 if interest_difference > 0:
-    st.success(f"Calculator 2 can save approximately **{format_inr(interest_difference)}** in total interest compared to Calculator 1.")
+    st.success(f"Calculator 2 can save approximately **{format_inr(interest_difference)}** in actual total interest compared to Calculator 1.")
 elif interest_difference < 0:
-    st.warning(f"Calculator 1 is cheaper by approximately **{format_inr(abs(interest_difference))}** in total interest.")
+    st.warning(f"Calculator 1 is cheaper by approximately **{format_inr(abs(interest_difference))}** in actual total interest.")
 else:
-    st.info("Both calculators have the same total interest cost.")
+    st.info("Both calculators have the same total actual interest cost.")
 
 # -----------------------------
 # Repayment schedules
