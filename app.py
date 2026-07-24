@@ -25,10 +25,13 @@ def calculator_inputs(title: str, key_prefix: str, default_rate: float) -> dict:
     # ---- Part Payment Section with Inline Calculation ----
     enable_pp = st.toggle("Enable Part Payments", key=f"{key_prefix}_pp_toggle")
     if enable_pp:
-        st.write("Add multiple part payments below. Click the **'+'** to add more rows.")
+        st.write("Add multiple part payments below. Click the empty row at the bottom to add more.")
         
-        # Initialize an empty dataframe with one blank row for the data editor
-        df_pp_init = pd.DataFrame([{"Month No.": None, "Part Payment Amount": None}])
+        # FIX: Initialize with strictly typed empty pandas Series to avoid React frontend crash on `None`
+        df_pp_init = pd.DataFrame({
+            "Month No.": pd.Series(dtype='Int64'), 
+            "Part Payment Amount": pd.Series(dtype='float64')
+        })
         
         # Use st.data_editor to allow dynamic addition of multiple rows
         edited_df = st.data_editor(
@@ -49,7 +52,7 @@ def calculator_inputs(title: str, key_prefix: str, default_rate: float) -> dict:
                     "Part Payment Amount", 
                     min_value=1.0, 
                     step=1000.0, 
-                    format="₹ %d"
+                    format="₹ %.2f"  # Fixed format to safely handle floats
                 )
             }
         )
@@ -57,16 +60,17 @@ def calculator_inputs(title: str, key_prefix: str, default_rate: float) -> dict:
         total_pp_amount = 0.0
         
         # Process the edited table into the part_payments dictionary
-        for index, row in edited_df.iterrows():
-            m = row["Month No."]
-            amt = row["Part Payment Amount"]
-            
-            # Check for valid inputs before adding
-            if pd.notna(m) and pd.notna(amt) and amt > 0:
-                m = int(m)
-                # If a user enters multiple payments for the exact same month, accumulate them
-                part_payments[m] = part_payments.get(m, 0.0) + float(amt)
-                total_pp_amount += float(amt)
+        if not edited_df.empty:
+            for index, row in edited_df.iterrows():
+                m = row["Month No."]
+                amt = row["Part Payment Amount"]
+                
+                # Check for valid inputs before adding
+                if pd.notna(m) and pd.notna(amt) and amt > 0:
+                    m = int(m)
+                    # If a user enters multiple payments for the exact same month, accumulate them
+                    part_payments[m] = part_payments.get(m, 0.0) + float(amt)
+                    total_pp_amount += float(amt)
         
         # If valid part payments exist, calculate and show the detailed impact
         if part_payments:
