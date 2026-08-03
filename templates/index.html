@@ -3,82 +3,276 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMI Calculator</title>
+    <title>Advanced Loan EMI & Part-Payment Calculator</title>
     <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
             margin: 0;
+            padding: 20px;
+            min-height: 100vh;
         }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 2.2rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
         .card {
-            background: white;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
+            margin-bottom: 30px;
         }
-        h2 { text-align: center; margin-bottom: 20px; color: #333; }
-        .form-group { margin-bottom: 15px; }
-        label { font-weight: bold; display: block; margin-bottom: 5px; color: #555; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+
         input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
             padding: 12px;
-            background-color: #007bff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        .part-payment-section {
+            background: #f9fafb;
+            border: 1px dashed #cbd5e1;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .part-payment-section h3 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            color: #374151;
+            margin-bottom: 15px;
+        }
+
+        .part-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .btn-calculate {
+            background-color: var(--primary);
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            width: 100%;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
             cursor: pointer;
-            margin-top: 10px;
+            transition: background 0.3s ease;
         }
-        button:hover { background-color: #0056b3; }
-        .results {
+
+        .btn-calculate:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
             margin-top: 20px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 5px;
         }
-        .results h3 { margin-top: 0; color: #333; }
-        .results p { margin: 8px 0; color: #495057; }
+
+        .result-box {
+            background: #f8fafc;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .result-box h4 {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .result-box p {
+            margin: 8px 0 0 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            color: #374151;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>EMI Calculator</h2>
-        <form method="POST">
-            <div class="form-group">
-                <label for="principal">Loan Amount (₹):</label>
-                <input type="number" step="any" id="principal" name="principal" placeholder="e.g. 500000" required>
-            </div>
-            <div class="form-group">
-                <label for="rate">Interest Rate (% per annum):</label>
-                <input type="number" step="any" id="rate" name="rate" placeholder="e.g. 8.5" required>
-            </div>
-            <div class="form-group">
-                <label for="months">Tenure (Months):</label>
-                <input type="number" id="months" name="months" placeholder="e.g. 60" required>
-            </div>
-            <button type="submit">Calculate EMI</button>
-        </form>
+    <div class="container">
+        <div class="header">
+            <h1>Smart Loan Matrix</h1>
+            <p>Calculate your EMI and simulate up to 5 strategic part-payments</p>
+        </div>
 
-        {% if emi is not none %}
-        <div class="results">
-            <h3>Breakdown</h3>
-            <p><strong>Monthly EMI:</strong> ₹{{ emi }}</p>
-            <p><strong>Total Interest:</strong> ₹{{ total_interest }}</p>
-            <p><strong>Total Payable:</strong> ₹{{ total_amount }}</p>
+        <div class="card">
+            <form method="POST">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="principal">Loan Amount (₹)</label>
+                        <input type="number" step="any" id="principal" name="principal" placeholder="e.g. 1000000" required value="{{ request.form.principal }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="rate">Interest Rate (% p.a.)</label>
+                        <input type="number" step="any" id="rate" name="rate" placeholder="e.g. 8.5" required value="{{ request.form.rate }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="months">Tenure (Months)</label>
+                        <input type="number" id="months" name="months" placeholder="e.g. 120" required value="{{ request.form.months }}">
+                    </div>
+                </div>
+
+                <div class="part-payment-section">
+                    <h3>⚡ Part-Payments Planner (Up to 5)</h3>
+                    {% for i in range(1, 6) %}
+                    <div class="part-row">
+                        <input type="number" name="part_month_{{ i }}" placeholder="Month # (e.g. 12)" value="{{ request.form.get('part_month_' ~ i, '') }}">
+                        <input type="number" step="any" name="part_amount_{{ i }}" placeholder="Amount (₹)" value="{{ request.form.get('part_amount_' ~ i, '') }}">
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn-calculate">Calculate Repayment Structure</button>
+            </form>
+
+            {% if emi is not none %}
+            <div class="results-grid">
+                <div class="result-box">
+                    <h4>Monthly EMI</h4>
+                    <p>₹{{ emi }}</p>
+                </div>
+                <div class="result-box">
+                    <h4>Total Interest</h4>
+                    <p>₹{{ total_interest }}</p>
+                </div>
+                <div class="result-box">
+                    <h4>Total Payable</h4>
+                    <p>₹{{ total_amount }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if schedule %}
+        <div class="card">
+            <h3>Detailed Repayment Schedule</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>EMI (₹)</th>
+                            <th>Principal Paid (₹)</th>
+                            <th>Interest Paid (₹)</th>
+                            <th>Extra Part-Pay (₹)</th>
+                            <th>Outstanding Balance (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in schedule %}
+                        <tr>
+                            <td>{{ row.month }}</td>
+                            <td>{{ row.emi }}</td>
+                            <td>{{ row.principal - row.extra }}</td>
+                            <td>{{ row.interest }}</td>
+                            <td style="color: {% if row.extra > 0 %}#16a34a{% else %}inherit{% endif %}; font-weight: {% if row.extra > 0 %}bold{% else %}normal{% endif %};">
+                                {{ row.extra }}
+                            </td>
+                            <td>{{ row.balance }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
         {% endif %}
     </div>
